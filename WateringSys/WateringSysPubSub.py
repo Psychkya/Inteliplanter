@@ -5,7 +5,7 @@ import argparse
 import json
 import random
 import subprocess
-import WateringSysVars.py
+import WateringSysVars
 
 
 def InitializeAWSIoT():
