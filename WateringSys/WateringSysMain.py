@@ -12,6 +12,7 @@ def PumpOnOff(client, userdata, message):
     WateringSysVars.WaterSysShadow["pumpdur"] = data["state"]["reported"]["pumpdur"]
     sem.release()
 
+
 wps.InitializeAWSIoT()
 wps.SubscribeAWSIoT(PumpOnOff)
 
@@ -36,14 +37,17 @@ while True:
     if WateringSysVars.WaterSysShadow["pumpsw"] == "1":
         WateringSysVars.WaterSysShadow["pumpsw"] = sensorData[8:9]
         WateringSysVars.WaterSysShadow["pumpdur"] = sensorData[9:12]
-        sem.release()
         sendToESP = "1" + WateringSysVars.WaterSysShadow["pumpdur"] + "0"
+        sem.release()
         UDPServerSocket.sendto(sendToESP, espaddress)
     else:
+        WateringSysVars.WaterSysShadow["pumpsw"] = sensorData[8:9]
+        WateringSysVars.WaterSysShadow["pumpdur"] = sensorData[9:12]        
         sem.release()
     WateringSysVars.WaterSysShadow["moisture"] = sensorData[0:4]
     WateringSysVars.WaterSysShadow["waterlvl"] = sensorData[4:8]
     WateringSysVars.WaterSysShadow["pumperr"] = sensorData[12:13]
+    wps.PublishAWSIoT()
     
 
 
