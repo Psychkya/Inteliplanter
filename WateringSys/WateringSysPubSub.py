@@ -33,7 +33,7 @@ def InitializeAWSIoT():
 #Subscribe
 def SubscribeAWSIoT(var):
     myAWSIoTMQTTClient.subscribe(WateringSysVars.topic_sub, 1, var)
-    time.sleep(3000)
+    time.sleep(5)
 
 #Publish
 def  PublishAWSIoT():

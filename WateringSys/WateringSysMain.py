@@ -11,6 +11,8 @@ def PumpOnOff(client, userdata, message):
     WateringSysVars.WaterSysShadow["pumpsw"] = data["state"]["reported"]["pumpsw"]
     WateringSysVars.WaterSysShadow["pumpdur"] = data["state"]["reported"]["pumpdur"]
     sem.release()
+    print("Pump switch: " + WateringSysVas.WaterSysShadow["pumpsw"])
+    print("Pump duration: " + WateringSysVas.WaterSysShadow["pumpdur"])
 
 
 wps.InitializeAWSIoT()
@@ -48,6 +50,7 @@ while True:
     WateringSysVars.WaterSysShadow["waterlvl"] = sensorData[4:8]
     WateringSysVars.WaterSysShadow["pumperr"] = sensorData[12:13]
     wps.PublishAWSIoT()
+    print("Published to AWS")
     
 
 
