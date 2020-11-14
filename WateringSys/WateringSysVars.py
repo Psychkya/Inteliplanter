@@ -5,9 +5,9 @@ bufferSize = 1024
 
 #AWS vars
 host = "a1fp1sv7eionud-ats.iot.us-west-2.amazonaws.com"
-rootCAPath = "certs/AmazonRootCA1.pem"
-certificatePath = "certs/57c8e4bd23-certificate.pem.crt"
-privateKeyPath = "certs/57c8e4bd23-private.pem.key"
+rootCAPath = "../../certs/AmazonRootCA1.pem"
+certificatePath = "../../certs/57c8e4bd23-certificate.pem.crt"
+privateKeyPath = "../../certs/57c8e4bd23-private.pem.key"
 port = 8883
 clientId = "WateringSys"
 topic_pub = "$aws/things/PlantSoilWater/shadow/update"
