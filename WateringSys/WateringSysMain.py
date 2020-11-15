@@ -2,17 +2,18 @@ import WateringSysPubSub as wps
 import WateringSysVars
 import socket
 import threading
+import json
 
 sem = threading.BoundedSemaphore(1)
 
 def PumpOnOff(client, userdata, message):
-    data = json.loads(mesage.payload)
+    data = json.loads(message.payload)
     sem.acquire()
     WateringSysVars.WaterSysShadow["pumpsw"] = data["state"]["reported"]["pumpsw"]
     WateringSysVars.WaterSysShadow["pumpdur"] = data["state"]["reported"]["pumpdur"]
     sem.release()
-    print("Pump switch: " + WateringSysVas.WaterSysShadow["pumpsw"])
-    print("Pump duration: " + WateringSysVas.WaterSysShadow["pumpdur"])
+    print("Pump switch: " + WateringSysVars.WaterSysShadow["pumpsw"])
+    print("Pump duration: " + WateringSysVars.WaterSysShadow["pumpdur"])
 
 
 wps.InitializeAWSIoT()
