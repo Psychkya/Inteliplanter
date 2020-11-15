@@ -35,14 +35,14 @@ UDPServerSocket.bind((WateringSysVars.localIP, WateringSysVars.localPort))
 while True:
     dataAddress = UDPServerSocket.recvfrom(WateringSysVars.bufferSize)
     sensorData = dataAddress[0]
-    espAddress = dataAddress[1]
+    ESPAddress = dataAddress[1]
     sem.acquire()
     if WateringSysVars.WaterSysShadow["pumpsw"] == "1":
         WateringSysVars.WaterSysShadow["pumpsw"] = sensorData[8:9]
         WateringSysVars.WaterSysShadow["pumpdur"] = sensorData[9:12]
         sendToESP = "1" + WateringSysVars.WaterSysShadow["pumpdur"] + "0"
         sem.release()
-        UDPServerSocket.sendto(sendToESP, espaddress)
+        UDPServerSocket.sendto(sendToESP, ESPAddress)
     else:
         WateringSysVars.WaterSysShadow["pumpsw"] = sensorData[8:9]
         WateringSysVars.WaterSysShadow["pumpdur"] = sensorData[9:12]        
