@@ -54,9 +54,9 @@ def customCallback(client, userdata, message):
 #args = parser.parse_args()
 
 host = "a1fp1sv7eionud-ats.iot.us-west-2.amazonaws.com"
-rootCAPath = "certs/AmazonRootCA1.pem"
-certificatePath = "certs/56a74b23bb-certificate.pem.crt"
-privateKeyPath = "certs/56a74b23bb-private.pem.key"
+rootCAPath = "../certs/AmazonRootCA1.pem"
+certificatePath = "../certs/56a74b23bb-certificate.pem.crt"
+privateKeyPath = "../certs/56a74b23bb-private.pem.key"
 port = 8883
 #useWebsocket = args.useWebsocket
 clientId = "BaseReader"
