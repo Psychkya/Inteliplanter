@@ -11,12 +11,11 @@ privateKeyPath = "../../certs/57c8e4bd23-private.pem.key"
 port = 8883
 clientId = "WateringSys"
 topic_pub = "$aws/things/PlantSoilWater/shadow/update"
-topic_sub = "$aws/things/PlantSoilWater/shadow/update/accepted"
+topic_sub = "$aws/things/PlantSoilWater/shadow/update"
 WaterSysShadow = {
     "moisture": "", #moisture level
     "waterlvl": "", #water level
     "pumpsw": "0", #turn pump on or off; off=0, on=1
     "pumpdur": "10", #how long should pump be on in seconds
     "pumperr": "0" #Any error encountered during pump operations
-
 }

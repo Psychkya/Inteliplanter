@@ -7,6 +7,8 @@ import json
 sem = threading.BoundedSemaphore(1)
 
 def PumpOnOff(client, userdata, message):
+    print("Recevied shadow")
+    print(message.payload)    
     data = json.loads(message.payload)
     sem.acquire()
     WateringSysVars.WaterSysShadow["pumpsw"] = data["state"]["reported"]["pumpsw"]
@@ -38,9 +40,12 @@ while True:
     dataAddress = UDPServerSocket.recvfrom(WateringSysVars.bufferSize)
     sensorData = dataAddress[0]
     ESPAddress = dataAddress[1]
+    print("Sensor data received : " + sensorData)    
     sem.acquire()
     if WateringSysVars.WaterSysShadow["pumpsw"] == "1":
         sendToESP = "1" + WateringSysVars.WaterSysShadow["pumpdur"] + "0"
+        WateringSysVars.WaterSysShadow["pumpsw"] = "0"
+        WateringSysVars.WaterSysShadow["pumpdur"] = "000"
         sem.release()
         UDPServerSocket.sendto(sendToESP, ESPAddress)
     else:
