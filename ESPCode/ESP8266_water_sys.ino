@@ -57,32 +57,36 @@ void setup() {
 uint16_t SampleWaterLevel()
 {
   uint16_t temp_waterlvl = 0;
+  uint16_t tot_waterlvl = 0;
   digitalWrite(12, HIGH); //turn sensor on  
   for (int i=0; i < 5; i++) //sample 5 times
   {
-    temp_waterlvl += analogRead(A0);
+    delay(100);
+    temp_waterlvl = analogRead(A0);
+    tot_waterlvl += temp_waterlvl;
     Serial.print("Water:");
     Serial.println(temp_waterlvl);
-    delay(100);
   }
   digitalWrite(12, LOW);  //turn sensor off
-  return uint16_t(temp_waterlvl / 5); //this probably should be mode and perhaps put some delta smartness
+  return uint16_t(tot_waterlvl / 5); //this probably should be mode and perhaps put some delta smartness
 }
 
 //Moisture sensor operation
 uint16_t SampleMoistureLevel()
 {
-  uint16_t temp_moisture = 0;  
+  uint16_t temp_moisture = 0;
+  uint16_t tot_moisture = 0;  
   digitalWrite(14, HIGH);  //turn sensor on
   for (int i=0; i < 5; i++) //sample 5 times
   {
-    temp_moisture += ss.touchRead(0);
+    temp_moisture = ss.touchRead(0);
+    tot_moisture += temp_moisture;
     Serial.print("Moisture:");
-    Serial.println(moisture);
+    Serial.println(temp_moisture);
     delay(100);
   }  
   digitalWrite(14, LOW); //turn off sensor
-  return uint16_t(temp_moisture / 5); //this should probably be mode
+  return uint16_t(tot_moisture / 5); //this should probably be mode
 }
 
 void loop() {
@@ -97,6 +101,8 @@ void loop() {
   
   //UDP portion
   sprintf(sensorData, "%04d%04d%d", moisture, waterlvl, pumperr);
+  Serial.print("Sensor data sent: ");
+  Serial.println(sensorData);
   Udp.beginPacket(remoteIP, remotePort);
   Udp.write(sensorData);
   Udp.endPacket();
@@ -124,16 +130,25 @@ void loop() {
     if (recvData[0] == '1')
     {
       int waterLvlNow = SampleWaterLevel();
-      if (waterLvlNow > 300)
+      if (waterLvlNow > 200)
       {
-        int dur = (recvData[1] - '0')*100 + (recvData[2] - '0')*10 + (recvData[3] - '0');
+        Serial.println("Turning on pump");
+        int dur = ((recvData[1] - '0')*100 + (recvData[2] - '0')*10 + (recvData[3] - '0')) * 1000;
+        Serial.print("Turning on pump on for ");
+        Serial.println(dur);
         digitalWrite(15, HIGH);
         delay(dur);
         digitalWrite(15, LOW);
       }
+      else {
+        Serial.println("Water level too low!");
+      }
+    }
+    else {
+      Serial.println("Received packet, but pump switch is off...");
     }
   }
   
-  delay(500);
+  delay(5000);
   
 }
