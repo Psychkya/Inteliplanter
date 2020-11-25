@@ -36,12 +36,12 @@ void setup() {
   Udp.begin(localPort); //Configure local port  to listen/send over
 
   //Configure wires for i2c and set GPIO for sensor operations
-  Wire.begin(4,5);
-  pinMode(12, OUTPUT); //for water level
-  pinMode(14, OUTPUT); //for moisture sensor
-  pinMode(15, OUTPUT); //for pump
+  Wire.begin(D2,D1);
+  pinMode(D5, OUTPUT); //for water level
+  pinMode(D6, OUTPUT); //for moisture sensor
+  pinMode(D7, OUTPUT); //for pump
   
-  digitalWrite(14, HIGH); //GPIO 14 needs to momentarily turned on for seesaw library
+  digitalWrite(D5, HIGH); //GPIO 14 needs to momentarily turned on for seesaw library
   if (!ss.begin(0x36)){
     Serial.println("ERROR! seesaw not found");
     while(1);
@@ -49,7 +49,7 @@ void setup() {
     Serial.print("seesaw started! version: ");
     Serial.println(ss.getVersion(),HEX);
   }
-  digitalWrite(14, LOW); //turn it off to conserver power
+  digitalWrite(D5, LOW); //turn it off to conserver power
   
 }
 
@@ -58,7 +58,7 @@ uint16_t SampleWaterLevel()
 {
   uint16_t temp_waterlvl = 0;
   uint16_t tot_waterlvl = 0;
-  digitalWrite(12, HIGH); //turn sensor on  
+  digitalWrite(D6, HIGH); //turn sensor on  
   for (int i=0; i < 5; i++) //sample 5 times
   {
     delay(100);
@@ -67,7 +67,7 @@ uint16_t SampleWaterLevel()
     Serial.print("Water:");
     Serial.println(temp_waterlvl);
   }
-  digitalWrite(12, LOW);  //turn sensor off
+  digitalWrite(D6, LOW);  //turn sensor off
   return uint16_t(tot_waterlvl / 5); //this probably should be mode and perhaps put some delta smartness
 }
 
@@ -76,7 +76,7 @@ uint16_t SampleMoistureLevel()
 {
   uint16_t temp_moisture = 0;
   uint16_t tot_moisture = 0;  
-  digitalWrite(14, HIGH);  //turn sensor on
+  digitalWrite(D5, HIGH);  //turn sensor on
   for (int i=0; i < 5; i++) //sample 5 times
   {
     temp_moisture = ss.touchRead(0);
@@ -85,7 +85,7 @@ uint16_t SampleMoistureLevel()
     Serial.println(temp_moisture);
     delay(100);
   }  
-  digitalWrite(14, LOW); //turn off sensor
+  digitalWrite(D5, LOW); //turn off sensor
   return uint16_t(tot_moisture / 5); //this should probably be mode
 }
 
@@ -136,9 +136,9 @@ void loop() {
         int dur = ((recvData[1] - '0')*100 + (recvData[2] - '0')*10 + (recvData[3] - '0')) * 1000;
         Serial.print("Turning on pump on for ");
         Serial.println(dur);
-        digitalWrite(15, HIGH);
+        digitalWrite(D7, HIGH);
         delay(dur);
-        digitalWrite(15, LOW);
+        digitalWrite(D7, LOW);
       }
       else {
         Serial.println("Water level too low!");

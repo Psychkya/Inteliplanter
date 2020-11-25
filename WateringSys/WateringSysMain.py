@@ -53,6 +53,7 @@ while True:
     WateringSysVars.WaterSysShadow["moisture"] = sensorData[0:4]
     WateringSysVars.WaterSysShadow["waterlvl"] = sensorData[4:8]
     WateringSysVars.WaterSysShadow["pumperr"] = sensorData[8]
+    WateringSysVars.WaterSysShadow["pumpcmd"] = "1"
     wps.PublishAWSIoT()
     print("Published to AWS")
     

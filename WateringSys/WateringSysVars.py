@@ -17,5 +17,6 @@ WaterSysShadow = {
     "waterlvl": "", #water level
     "pumpsw": "0", #turn pump on or off; off=0, on=1
     "pumpdur": "10", #how long should pump be on in seconds
-    "pumperr": "0" #Any error encountered during pump operations
+    "pumperr": "0", #Any error encountered during pump operations
+    "pumpcmd" : "1" #Indicate lambda it can send a pump on operation
 }

@@ -40,7 +40,8 @@ def  PublishAWSIoT():
     JSONPayload = '{"state": {"reported": {"moisture":"' + WateringSysVars.WaterSysShadow["moisture"] + \
     '","waterlvl":"' + WateringSysVars.WaterSysShadow["waterlvl"] + \
     '", "pumpsw":"' + WateringSysVars.WaterSysShadow["pumpsw"] + \
-    '", "pumpdur":"' + WateringSysVars.WaterSysShadow["pumpdur"] + \        
+    '", "pumpdur":"' + WateringSysVars.WaterSysShadow["pumpdur"] + \
+    '", "pumpcmd":"' + WateringSysVars.WaterSysShadow["pumpcmd"] + \        
     '", "pumperr":"' + WateringSysVars.WaterSysShadow["pumperr"] + '"} }}'
     myAWSIoTMQTTClient.publish(WateringSysVars.topic_pub, JSONPayload, 1)    
 
