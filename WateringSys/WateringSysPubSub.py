@@ -41,7 +41,7 @@ def  PublishAWSIoT():
     '","waterlvl":"' + WateringSysVars.WaterSysShadow["waterlvl"] + \
     '", "pumpsw":"' + WateringSysVars.WaterSysShadow["pumpsw"] + \
     '", "pumpdur":"' + WateringSysVars.WaterSysShadow["pumpdur"] + \
-    '", "pumpcmd":"' + WateringSysVars.WaterSysShadow["pumpcmd"] + \        
+    '", "pumpcmd":"' + WateringSysVars.WaterSysShadow["pumpcmd"] + \
     '", "pumperr":"' + WateringSysVars.WaterSysShadow["pumperr"] + '"} }}'
     myAWSIoTMQTTClient.publish(WateringSysVars.topic_pub, JSONPayload, 1)    
 
