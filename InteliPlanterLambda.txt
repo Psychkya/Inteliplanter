@@ -1,0 +1,139 @@
+from __future__ import print_function
+ 
+import json
+import boto3
+import datetime
+#import greengrasssdk
+
+ 
+print('Loading function')
+ 
+def lambda_handler(event, context):
+ 
+    current_time = datetime.datetime.now()  
+    print (current_time)  
+ 
+    # Parse the JSON message
+  
+  #state values for light are represented by :Vislight, IRlight, UV
+  
+    sensor = event['state']['reported']
+   
+    moisture = int(sensor['moisture'])
+    moisture_str = sensor['moisture']
+    pumpcmd = sensor['pumpcmd']
+    Id = sensor['id'];
+    
+    #The shadow will have an ID. Use that to get appropriate dynamodb values
+   
+    #Update data in the dynamoDB data base 
+    dynamodb = boto3.resource('dynamodb')
+    planterTable = dynamodb.Table('IntelliPlanter')
+    plantTable = dynamodb.Table('plant_catalog')
+
+
+    # Get planter from tables
+    response1 = planterTable.get_item(
+        Key={
+            'PlanterId': Id
+        }
+    )
+    planter = response1['Item']
+    print(planter)
+    
+    # Get plant type from table
+    plant = planter['plantType']
+    response2 = plantTable.get_item(
+        Key={
+            'plantType': plant
+        }
+    )
+    plantType = response2['Item']
+    print(plantType)
+
+###### Light Logic ######
+    lightControl = 0; #Light off
+    
+    lightCnt = planter['lightCnt']
+
+    # Check if sensors are recording values that constitute and hour of sun 
+    if((int(sensor['Vislight']) >= 1) & (int(sensor['IRlight']) >= 1) & (int(sensor['UV']) >= 1)):
+        response4 = planterTable.update_item(
+            Key={
+                'PlanterId': Id
+            },
+            UpdateExpression="set lightCnt=:r",
+            ExpressionAttributeValues={
+                ':r': lightCnt + 1,
+            }
+        )
+
+    # Check if light requirement is fulfilled 
+    if((plantType['lightExposure'] == 'full') & (lightCnt >= 8) |
+    (plantType['lightExposure'] == 'partial') & (lightCnt >= 6) |
+    (plantType['lightExposure'] == 'shade') & (lightCnt >= 4)):
+        lightControl = 0; #Turn off light 
+    else:
+        lightControl = 1;
+   
+   
+###### Moisture Logic ######
+    #COMARISON VALUE FOR MOISTURE HAS TO COME FROM DYNAMODB
+    waterTimer = planter['waterTimerDays'];
+    if (moisture < 400) and (pumpcmd == 1):
+        if ((plantType['waterLevel'] == 'dry') & (planter['waterTimerDays'] == 0)):
+            waterTimer = 30; 
+            sensor['pumpsw'] = '1'
+        elif ((plantType['waterLevel'] == 'average') & (planter['waterTimerDays'] == 0)):
+            waterTimer = 2;
+            sensor['pumpsw'] = '1'
+        elif ((plantType['waterLevel'] == 'moist')):
+            sensor['pumpsw'] = '1'
+        
+        sensor['pumpdur'] = '010' #THIS HAS TO COME FROM DYNAMODB
+        sensor['pumpcmd'] = '0' #This is to prevent lambda from triggering over and over again
+        
+        eventText = json.dumps(event)        
+        myclient = boto3.client('iot-data')
+        
+        #Publish a message to the specified topic
+        response = myclient.publish (
+            topic = '$aws/things/PlantSoilWater/shadow/update',
+            qos = 0,
+            payload = eventText.encode()
+              
+        )        
+        print('Received event: ', eventText)
+        
+    elif (waterTimer > 0): #assumes we only check water once a day, needs to be fixed
+        waterTimer = waterTimer - 1;
+    
+
+   
+##### Update dynamoDB with new values #####
+
+    response3 = planterTable.update_item(
+        Key={
+            'PlanterId': Id
+        },
+        UpdateExpression="set moisture=:r, waterTimerDays=:w",
+        ExpressionAttributeValues={
+            ':r': moisture_str,
+            ':w': waterTimer
+        },
+        ReturnValues="UPDATED_NEW"
+    )  
+
+
+  
+   
+    #print(sensor)
+    #print(event)
+   
+    #print('checking',event['State']['reported']) works perfectly
+  
+ 
+    # Create an SNS client
+
+ 
+    print(response)
