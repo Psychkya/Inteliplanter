@@ -42,6 +42,16 @@ def  PublishAWSIoT():
     '", "pumpsw":"' + WateringSysVars.WaterSysShadow["pumpsw"] + \
     '", "pumpdur":"' + WateringSysVars.WaterSysShadow["pumpdur"] + \
     '", "pumpcmd":"' + WateringSysVars.WaterSysShadow["pumpcmd"] + \
-    '", "pumperr":"' + WateringSysVars.WaterSysShadow["pumperr"] + '"} }}'
-    myAWSIoTMQTTClient.publish(WateringSysVars.topic_pub, JSONPayload, 1)    
+    '", "pumperr":"' + WateringSysVars.WaterSysShadow["pumperr"] + \
+    '", "vis":"' + WateringSysVars.WaterSysShadow["vis"] + \
+    '", "ir":"' + WateringSysVars.WaterSysShadow["ir"] + \
+    '", "uv":"' + WateringSysVars.WaterSysShadow["uv"] + \
+    '", "lightDimCmd":"' + WateringSysVars.WaterSysShadow["lightDimCmd"] + \
+    '", "dimmerCurrent":"' + WateringSysVars.WaterSysShadow["dimmerCurrent"] + \
+    '", "dimmerPrev":"' + WateringSysVars.WaterSysShadow["dimmerPrev"] + \
+    '", "lightSwitchCmd":"' + WateringSysVars.WaterSysShadow["lightSwitchCmd"] + \
+    '", "lightswitch":"' + WateringSysVars.WaterSysShadow["lightswitch"] + \
+    '"} }}'
+    print(JSONPayload)
+    #myAWSIoTMQTTClient.publish(WateringSysVars.topic_pub, JSONPayload, 1)    
 

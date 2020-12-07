@@ -4,27 +4,94 @@ import socket
 import threading
 import json
 
-sem = threading.BoundedSemaphore(1)
+sem_water = threading.BoundedSemaphore(1)
+sem_light = threading.BoundedSemaphore(1)
+sem_cmd = threading.BoundedSemaphore(2)
 
-def PumpOnOff(client, userdata, message):
+
+#Bind sockets
+UDPServerSocket_water = socket.socket(family=socket.AF_INET, type=socket.SOCK_DGRAM)
+UDPServerSocket_water.bind((WateringSysVars.localIP, WateringSysVars.localPort_water))
+
+UDPServerSocket_light = socket.socket(family=socket.AF_INET, type=socket.SOCK_DGRAM)
+UDPServerSocket_light.bind((WateringSysVars.localIP, WateringSysVars.localPort_light))
+
+def ServiceCommands(client, userdata, message):
     print("Recevied shadow")
     print(message.payload)    
     data = json.loads(message.payload)
-    sem.acquire()
+    sem_cmd.acquire()
     WateringSysVars.WaterSysShadow["pumpsw"] = data["state"]["reported"]["pumpsw"]
     WateringSysVars.WaterSysShadow["pumpdur"] = data["state"]["reported"]["pumpdur"]
-    sem.release()
+    WateringSysVars.LightSysShadow["lightswitch"] = data["state"]["reported"]["lightswitch"]
+    WateringSysVars.LightSysShadow["lightSwitchCmd"] = data["state"]["reported"]["lightSwitchCmd"]
+    sem_cmd.release()
     print("Pump switch: " + WateringSysVars.WaterSysShadow["pumpsw"])
     print("Pump duration: " + WateringSysVars.WaterSysShadow["pumpdur"])
     print("Moisture: " + data["state"]["reported"]["moisture"])
     print("Water lvl: " + data["state"]["reported"]["waterlvl"])
 
+def GetWaterSysData(): 
+    while True:
+        dataAddress = UDPServerSocket_water.recvfrom(WateringSysVars.bufferSize_wtr)
+        sensorData = dataAddress[0]
+        ESPAddress = dataAddress[1]
+        print("Sensor data received - water: " + sensorData)
+        #set water sensor variables
+        sem_cmd.acquire()
+        if WateringSysVars.WaterSysShadow["pumpsw"] == "1":
+            sendToESP = "1" + WateringSysVars.WaterSysShadow["pumpdur"] + "0"
+            WateringSysVars.WaterSysShadow["pumpsw"] = "0"
+            WateringSysVars.WaterSysShadow["pumpdur"] = "000"
+            sem_cmd.release()
+            UDPServerSocket_water.sendto(sendToESP, ESPAddress)
+        else:
+            sem_cmd.release()    
+        sem_water.acquire()
+        WateringSysVars.WaterSysShadow["moisture"] = sensorData[0:4]
+        WateringSysVars.WaterSysShadow["waterlvl"] = sensorData[4]
+        WateringSysVars.WaterSysShadow["pumperr"] = sensorData[5]
+        WateringSysVars.WaterSysShadow["pumpcmd"] = "1"
+        sem_water.release()
 
-wps.InitializeAWSIoT()
-wps.SubscribeAWSIoT(PumpOnOff)
+def GetLightSysData():
+    while True:
+        dataAddress = UDPServerSocket_light.recvfrom(WateringSysVars.bufferSize_lgt)
+        sensorData = dataAddress[0]
+        ESPAddress = dataAddress[1]
+        print("Sensor data received - light: " + sensorData)
+        #set water sensor variables
+        sem_cmd.acquire()
+        if WateringSysVars.LightSysShadow["lightSwitchCmd"] == "1" or WateringSysVars.LightSysShadow["lightDimCmd"] == "1":
+            if WateringSysVars.LightSysShadow["lightSwitchCmd"] == "1":
+                sendToESP = "1"
+            else:
+                sendToESP = "0"
+            if WateringSysVars.LightSysShadow["lightDimCmd"] == "1":
+                sendToESP += WateringSysVars.LightSysShadow["dimmer"]
+            else:
+                sendToESP += "x"
+            WateringSysVars.LightSysShadow["lightSwitchCmd"] = "0"
+            WateringSysVars.WaterSysShadow["lightDimCmd"] = "0"
+            sem_cmd.release()
+            UDPServerSocket_water.sendto(sendToESP, ESPAddress)
+        else:
+            sem_cmd.release()    
+        sem_light.acquire()
+        WateringSysVars.LightSysShadow["vis"] = sensorData[0:4]
+        WateringSysVars.LightSysShadow["ir"] = sensorData[4:8]
+        WateringSysVars.LightSysShadow["uv"] = sensorData[8:12]
+        sem_light.release()
 
-UDPServerSocket = socket.socket(family=socket.AF_INET, type=socket.SOCK_DGRAM)
-UDPServerSocket.bind((WateringSysVars.localIP, WateringSysVars.localPort))
+
+#wps.InitializeAWSIoT()
+#wps.SubscribeAWSIoT(ServiceCommands)
+
+thread1 = threading.Thread(target=GetWaterSysData)
+thread2 = threading.Thread(target=GetLightSysData)
+
+thread1.start()
+thread2.start()
 
 ###Receive from ESP
 #MMMMLLLLSDDDE
@@ -36,26 +103,21 @@ UDPServerSocket.bind((WateringSysVars.localIP, WateringSysVars.localPort))
 ##
 ###Send to ESP
 #SDDDE
-while True:
-    dataAddress = UDPServerSocket.recvfrom(WateringSysVars.bufferSize)
-    sensorData = dataAddress[0]
-    ESPAddress = dataAddress[1]
-    print("Sensor data received : " + sensorData)    
-    sem.acquire()
-    if WateringSysVars.WaterSysShadow["pumpsw"] == "1":
-        sendToESP = "1" + WateringSysVars.WaterSysShadow["pumpdur"] + "0"
-        WateringSysVars.WaterSysShadow["pumpsw"] = "0"
-        WateringSysVars.WaterSysShadow["pumpdur"] = "000"
-        sem.release()
-        UDPServerSocket.sendto(sendToESP, ESPAddress)
-    else:
-        sem.release()
-    WateringSysVars.WaterSysShadow["moisture"] = sensorData[0:4]
-    WateringSysVars.WaterSysShadow["waterlvl"] = sensorData[4]
-    WateringSysVars.WaterSysShadow["pumperr"] = sensorData[5]
-    WateringSysVars.WaterSysShadow["pumpcmd"] = "1"
-    wps.PublishAWSIoT()
-    print("Published to AWS")
+try:
+    while True:
+        sem_cmd.acquire()
+        sem_light.acquire()
+        sem_water.acquire()
+        wps.PublishAWSIoT()
+        sem_cmd.release()
+        sem_light.release()
+        sem_water.release()
+        sleep(1)
+        print("Published to AWS")
+except (KeyboardInterrupt, SystemExit):
+    thread1.join()
+    thread2.join()
+
     
 
 
