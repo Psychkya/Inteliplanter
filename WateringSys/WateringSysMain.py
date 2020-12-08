@@ -9,9 +9,6 @@ sem_water = threading.BoundedSemaphore(1)
 sem_light = threading.BoundedSemaphore(1)
 sem_cmd = threading.BoundedSemaphore(2)
 
-thread_signal = 1
-
-
 #Bind sockets
 UDPServerSocket_water = socket.socket(family=socket.AF_INET, type=socket.SOCK_DGRAM)
 UDPServerSocket_water.bind((WateringSysVars.localIP, WateringSysVars.localPort_water))
@@ -35,7 +32,7 @@ def ServiceCommands(client, userdata, message):
     print("Water lvl: " + data["state"]["reported"]["waterlvl"])
 
 def GetWaterSysData(): 
-    while thread_signal:
+    while True:
         dataAddress = UDPServerSocket_water.recvfrom(WateringSysVars.bufferSize_wtr)
         sensorData = dataAddress[0]
         ESPAddress = dataAddress[1]
@@ -58,7 +55,7 @@ def GetWaterSysData():
         sem_water.release()
 
 def GetLightSysData():
-    while thread_signal:
+    while True:
         dataAddress = UDPServerSocket_light.recvfrom(WateringSysVars.bufferSize_lgt)
         sensorData = dataAddress[0]
         ESPAddress = dataAddress[1]
@@ -93,7 +90,9 @@ def GetLightSysData():
 thread1 = threading.Thread(target=GetWaterSysData)
 thread2 = threading.Thread(target=GetLightSysData)
 
+thread1.setDaemon(True)
 thread1.start()
+thread2.setDaemon(True)
 thread2.start()
 
 ###Receive from ESP
@@ -119,8 +118,10 @@ try:
         print("Published to AWS")
 except (KeyboardInterrupt, SystemExit):
     thread_signal = 0
-    thread1.join()
-    thread2.join()
+    sem_light.acquire()
+    sem_water.acquire()
+    sem_light.release()
+    sem_water.release()
     sys.exit(0)
 
     
