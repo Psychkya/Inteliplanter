@@ -3,10 +3,13 @@ import WateringSysVars
 import socket
 import threading
 import json
+import sys
 
 sem_water = threading.BoundedSemaphore(1)
 sem_light = threading.BoundedSemaphore(1)
 sem_cmd = threading.BoundedSemaphore(2)
+
+thread_signal = 1
 
 
 #Bind sockets
@@ -32,7 +35,7 @@ def ServiceCommands(client, userdata, message):
     print("Water lvl: " + data["state"]["reported"]["waterlvl"])
 
 def GetWaterSysData(): 
-    while True:
+    while thread_signal:
         dataAddress = UDPServerSocket_water.recvfrom(WateringSysVars.bufferSize_wtr)
         sensorData = dataAddress[0]
         ESPAddress = dataAddress[1]
@@ -55,7 +58,7 @@ def GetWaterSysData():
         sem_water.release()
 
 def GetLightSysData():
-    while True:
+    while thread_signal:
         dataAddress = UDPServerSocket_light.recvfrom(WateringSysVars.bufferSize_lgt)
         sensorData = dataAddress[0]
         ESPAddress = dataAddress[1]
@@ -115,8 +118,10 @@ try:
         sleep(1)
         print("Published to AWS")
 except (KeyboardInterrupt, SystemExit):
+    thread_signal = 0
     thread1.join()
     thread2.join()
+    sys.exit(0)
 
     
 
