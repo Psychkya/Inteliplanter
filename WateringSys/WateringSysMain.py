@@ -114,7 +114,7 @@ try:
         sem_cmd.release()
         sem_light.release()
         sem_water.release()
-        sleep(1)
+        time.sleep(1)
         print("Published to AWS")
 except (KeyboardInterrupt, SystemExit):
     thread_signal = 0
