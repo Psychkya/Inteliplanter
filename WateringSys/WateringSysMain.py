@@ -4,6 +4,7 @@ import socket
 import threading
 import json
 import sys
+import time
 
 sem_water = threading.BoundedSemaphore(1)
 sem_light = threading.BoundedSemaphore(1)
