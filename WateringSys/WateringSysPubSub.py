@@ -55,5 +55,5 @@ def  PublishAWSIoT():
     '"} }}'
     print("Payload: ")
     print(JSONPayload)
-    #myAWSIoTMQTTClient.publish(WateringSysVars.topic_pub, JSONPayload, 1)    
+    myAWSIoTMQTTClient.publish(WateringSysVars.topic_pub, JSONPayload, 1)    
 

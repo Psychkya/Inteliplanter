@@ -85,8 +85,8 @@ def GetLightSysData():
         sem_light.release()
 
 
-#wps.InitializeAWSIoT()
-#wps.SubscribeAWSIoT(ServiceCommands)
+wps.InitializeAWSIoT()
+wps.SubscribeAWSIoT(ServiceCommands)
 
 thread1 = threading.Thread(target=GetWaterSysData)
 thread2 = threading.Thread(target=GetLightSysData)
