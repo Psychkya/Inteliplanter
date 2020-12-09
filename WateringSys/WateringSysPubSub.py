@@ -37,8 +37,9 @@ def SubscribeAWSIoT(var):
 
 #Publish
 def  PublishAWSIoT():
-    JSONPayload = '{"state": {"reported": {"moisture":"' + WateringSysVars.WaterSysShadow["moisture"] + \
-    '","waterlvl":"' + WateringSysVars.WaterSysShadow["waterlvl"] + \
+    JSONPayload = '{"state": {"reported": {"id":"' + WateringSysVars.plantShadow["id"] + \
+    '", "moisture":"' + WateringSysVars.WaterSysShadow["moisture"] + \
+    '", "waterlvl":"' + WateringSysVars.WaterSysShadow["waterlvl"] + \
     '", "pumpsw":"' + WateringSysVars.WaterSysShadow["pumpsw"] + \
     '", "pumpdur":"' + WateringSysVars.WaterSysShadow["pumpdur"] + \
     '", "pumpcmd":"' + WateringSysVars.WaterSysShadow["pumpcmd"] + \

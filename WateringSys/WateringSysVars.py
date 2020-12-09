@@ -14,6 +14,7 @@ port = 8883
 clientId = "WateringSys"
 topic_pub = "$aws/things/PlantSoilWater/shadow/update"
 topic_sub = "$aws/things/PlantSoilWater/shadow/update"
+plantShadow = {"id": "ip11111"}
 WaterSysShadow = {
     "moisture": "", #moisture level
     "waterlvl": "", #water level
