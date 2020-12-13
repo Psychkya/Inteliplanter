@@ -3,34 +3,26 @@ from __future__ import print_function
 import json
 import boto3
 import datetime
-#import greengrasssdk
 
- 
 print('Loading function')
  
 def lambda_handler(event, context):
  
-    current_time = datetime.datetime.now()  
-    print (current_time)  
+    #current_time = datetime.datetime.now()  
+    #print (current_time)  
  
     # Parse the JSON message
-  
-  #state values for light are represented by :Vislight, IRlight, UV
-  
-    sensor = event['state']['reported']
-   
-    moisture = int(sensor['moisture'])
-    moisture_str = sensor['moisture']
-    pumpcmd = sensor['pumpcmd']
-    Id = sensor['id'];
+    #print(event)
+    sensor = event['current']['state']['reported']
+    #sensor = json.loads(event['current']['state']['reported'])
+    #print(sensor)
+    #Id = 'ip11111' 
+    Id = sensor['id']
     
-    #The shadow will have an ID. Use that to get appropriate dynamodb values
-   
     #Update data in the dynamoDB data base 
     dynamodb = boto3.resource('dynamodb')
     planterTable = dynamodb.Table('IntelliPlanter')
     plantTable = dynamodb.Table('plant_catalog')
-
 
     # Get planter from tables
     response1 = planterTable.get_item(
@@ -39,7 +31,7 @@ def lambda_handler(event, context):
         }
     )
     planter = response1['Item']
-    print(planter)
+    #print(planter)
     
     # Get plant type from table
     plant = planter['plantType']
@@ -49,65 +41,152 @@ def lambda_handler(event, context):
         }
     )
     plantType = response2['Item']
-    print(plantType)
+    #print(plantType)
 
 ###### Light Logic ######
-    lightControl = 0; #Light off
+#    lightControl = 0; #Light off
     
-    lightCnt = planter['lightCnt']
+#    lightCnt = planter['lightCnt']
 
     # Check if sensors are recording values that constitute and hour of sun 
-    if((int(sensor['Vislight']) >= 1) & (int(sensor['IRlight']) >= 1) & (int(sensor['UV']) >= 1)):
-        response4 = planterTable.update_item(
-            Key={
-                'PlanterId': Id
-            },
-            UpdateExpression="set lightCnt=:r",
-            ExpressionAttributeValues={
-                ':r': lightCnt + 1,
-            }
-        )
+#    if((int(sensor['Vislight']) >= 1) & (int(sensor['IRlight']) >= 1) & (int(sensor['UV']) >= 1)):
+#        response4 = planterTable.update_item(
+#            Key={
+#                'PlanterId': Id
+#            },
+#            UpdateExpression="set lightCnt=:r",
+#            ExpressionAttributeValues={
+#                ':r': lightCnt + 1,
+#            }
+#        )
 
     # Check if light requirement is fulfilled 
-    if((plantType['lightExposure'] == 'full') & (lightCnt >= 8) |
-    (plantType['lightExposure'] == 'partial') & (lightCnt >= 6) |
-    (plantType['lightExposure'] == 'shade') & (lightCnt >= 4)):
-        lightControl = 0; #Turn off light 
-    else:
-        lightControl = 1;
+#    if((plantType['lightExposure'] == 'full') & (lightCnt >= 8) |
+#    (plantType['lightExposure'] == 'partial') & (lightCnt >= 6) |
+#    (plantType['lightExposure'] == 'shade') & (lightCnt >= 4)):
+#        lightControl = 0; #Turn off light 
+#    else:
+#        lightControl = 1;
+        
+#state values for light are represented by :Vislight, IRlight, UV
+  
+#    sensor = event['state']['reported']
    
+#    uv_value = int(sensor['uv'])
+#    vis_value = int(sensor['vis'])
+#    ir_value = int(sensor['ir'])
+ 
+  ###find clicks required to get to dimmer state value
+#    def clicks(previous,new,nextstate):
+#        click = 0
+#        while(previous != new):
+#            previous = previous+nextstate
+#            click +=1
+#            if (previous == 1) or (previous == 9):
+#                nextstate = nextstate*-1
+#    return (click,nextstate)
+   
+  ###light logic ###
+  #check for light initialization
+    # if (lightinit not in sensor):
+    #     sensor['lightinit'] = 0; #initialize lightinit value as zero
+    #     sensor['dimmerPrev']= 0;
+    #     sensor['nextlstate'] = 0;
+    
+    # if sensor['lightinit'] == 1:
+    #     lightstate = int(sensor['dimmerPrev'])
+    #     nextstate = int(sensor['nextlstate'])
+     
+    # elif sensor['lightinit'] == 0:
+    #     lightstate = 9;
+    #     sensor['dimmerPrev'] = lightstate
+    #     sensor['lightinit'] = 1
+    #     sensor['nextlstate'] = -1
+       
+ 
+  ### algorithim to check if light is adequate or not by doing some multiplication and addition with uv, ir, and vis light values
+ 
+#    if (vis_value < 270):
+#        lightexposure = 'none'
+#        dimmerCurrent = 9
+#    elif(270 < vis_value < 807):
+#        lightexposure = 'low'
+#        dimmerCurrent = 7
+#    elif(807 < vis_value < 1614):
+#        lightexposure = 'medium'
+#        dimmerCurrent = 3
+#    elif(1614 < vis_value):
+#        lightexposure = 'high'
+#        dimmerCurrent = 0
+  ###output variable with be lightexposure which will be high, medium, low, none
+ 
+  ###
+#    if(lightexposure != 'high'):
+        #turn light on to maximum level
+#        if(sensor['lightswitch'] == 0):
+#            sensor['lightSwitchCmd'] =1
+#            sensor['lightswitch'] = 1
+#        dimmerPrev = sensor['dimmerPrev']
+#        nextstate = sensor['nextlstate']
+#        a = clicks(dimmerPrev,dimmerCurrent,nextstate)
+#        sensor['lightDimCmd'] = 1
+#        sensor['dimmerCurrent'] = dimmerCurrent
+#        sensor['dimmerPrev'] = sensor['dimmerCurrent']
+#        sensor['clicks'] = a(0)
+#        sensor['nextlstate'] = a(1)
+#    elif(lightexposure=='high'):
+#        if(sensor['lightswitch'] == 1 ):
+#            sensor['lightSwitchCmd'] = 1
+#            sensor['lightswitch'] = 0
+  
    
 ###### Moisture Logic ######
-    #COMARISON VALUE FOR MOISTURE HAS TO COME FROM DYNAMODB
-    waterTimer = planter['waterTimerDays'];
-    if (moisture < 400) and (pumpcmd == 1):
-        if ((plantType['waterLevel'] == 'dry') & (planter['waterTimerDays'] == 0)):
-            waterTimer = 30; 
-            sensor['pumpsw'] = '1'
-        elif ((plantType['waterLevel'] == 'average') & (planter['waterTimerDays'] == 0)):
-            waterTimer = 2;
-            sensor['pumpsw'] = '1'
-        elif ((plantType['waterLevel'] == 'moist')):
-            sensor['pumpsw'] = '1'
-        
-        sensor['pumpdur'] = '010' #THIS HAS TO COME FROM DYNAMODB
-        sensor['pumpcmd'] = '0' #This is to prevent lambda from triggering over and over again
-        
-        eventText = json.dumps(event)        
+    moisture = int(sensor['moisture'])
+    #print(moisture)
+    moisture_str = sensor['moisture']
+    pumpcmd = int(sensor['pumpcmd'])
+    waterTimer = planter['waterTimerDays']
+    pumpsw = 0
+    pumpdur = 0
+    errorMessage = "Happy Growing =)"
+    print("This is pumpcmd: %d" % (pumpcmd))
+    if (pumpcmd == 1): #check for water update
+        print("running water")
+        if (waterTimer > 0): #assumes we only check water once a day, needs to be fixed
+            waterTimer = waterTimer - 1
+            print("counting down days")
+        elif (moisture < 400) and (waterTimer == -1):
+            print("setting water wait")
+            if (plantType['waterLevel'] == 'dry'):
+                waterTimer = 30
+            elif (plantType['waterLevel'] == 'average'):
+                waterTimer = 2
+            elif (plantType['waterLevel'] == 'moist'):
+                waterTimer = 0
+        elif (waterTimer == 0) and (sensor['waterlvl'] != 'C'):
+            print("turning on pump")
+            pumpsw = 1
+            pumpdur = 10 #THIS HAS TO COME FROM DYNAMODB
+            waterTimer = waterTimer - 1
+    
+        if (sensor['waterlvl'] == 'C'):
+            errorMessage = "URGENT: Water level is critally low, please refill the water tank"
+        elif (sensor['waterlvl'] == 'L'):
+            errorMessage = "Water level is low, please refill the water tank"
+            
+        pumpcmd = 0 #This is to prevent lambda from triggering over and over again
+  
+##### Update shadow with new values #####  
         myclient = boto3.client('iot-data')
+        data = {"state" : { "reported" : { "pumpsw" : str(pumpsw), "pumpdur" : str(pumpdur).zfill(3), "pumpcmd" : str(pumpcmd) }}}
+        eventText = json.dumps(data)
         
         #Publish a message to the specified topic
         response = myclient.publish (
             topic = '$aws/things/PlantSoilWater/shadow/update',
             qos = 0,
             payload = eventText.encode()
-              
         )        
-        print('Received event: ', eventText)
-        
-    elif (waterTimer > 0): #assumes we only check water once a day, needs to be fixed
-        waterTimer = waterTimer - 1;
-    
 
    
 ##### Update dynamoDB with new values #####
@@ -116,24 +195,13 @@ def lambda_handler(event, context):
         Key={
             'PlanterId': Id
         },
-        UpdateExpression="set moisture=:r, waterTimerDays=:w",
+        UpdateExpression="set moisture=:r, waterTimerDays=:w, errorMessage=:e",
         ExpressionAttributeValues={
             ':r': moisture_str,
-            ':w': waterTimer
+            ':w': waterTimer,
+            ':e': errorMessage
         },
         ReturnValues="UPDATED_NEW"
     )  
 
-
-  
-   
-    #print(sensor)
-    #print(event)
-   
-    #print('checking',event['State']['reported']) works perfectly
-  
- 
-    # Create an SNS client
-
- 
     print(response)
