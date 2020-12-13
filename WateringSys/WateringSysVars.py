@@ -19,10 +19,10 @@ publish_light_AWS = 0
 plantShadow = {"id": "ip11111"}
 WaterSysShadow = {
     "moisture": "", #moisture level
-    "waterlvl": "", #water level
-    "pumpsw": "0", #turn pump on or off; off=0, on=1
-    "pumpdur": "10", #how long should pump be on in seconds
-    "pumperr": "0", #Any error encountered during pump operations
+    "waterLvl": "", #water level
+    "pumpSw": "0", #turn pump on or off; off=0, on=1
+    "pumpDur": "000", #how long should pump be on in seconds
+    "pumpErr": "0", #Any error encountered during pump operations
     "waterUnlock": "1" #Indicate lambda it can send a pump on operation
 }
 LightSysShadow = {
@@ -30,12 +30,10 @@ LightSysShadow = {
     "ir": "", #ir
     "uv": "", #uv index
     "lightDimCmd": "0", #dictates whether a dimmer command was sent
-    "dimmerCurrent": "", #dimmer value
-    "dimmerPrev": "", #dimmer value
+    "dimmerValue": "9", #dimmer value
     "lightSwitchCmd": "0", #dictates whether a light command was sent
-    "lightswitch": "1", #Any error encountered during pump operations
-    "lightinit":"0",
+    "lightSwitch": "0", #Any error encountered during pump operations
     "clicks":"0",
-    "nextlstate":"x",
+    "nextState":"-1",
     "lightUnlock": "1"
 }

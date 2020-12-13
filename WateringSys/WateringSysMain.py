@@ -23,13 +23,13 @@ def ServiceCommands(client, userdata, message):
     sem_cmd_water.acquire()  #lock the semaphore to update local vars
     sem_cmd_light.acquire()  #lock the semaphore to update local vars
     data = json.loads(message.payload)
-    WateringSysVars.WaterSysShadow["pumpsw"] = data["state"]["reported"]["pumpsw"]
-    WateringSysVars.WaterSysShadow["pumpdur"] = data["state"]["reported"]["pumpdur"]
-    WateringSysVars.LightSysShadow["lightswitch"] = data["state"]["reported"]["lightswitch"]
+    WateringSysVars.WaterSysShadow["pumpSw"] = data["state"]["reported"]["pumpSw"]
+    WateringSysVars.WaterSysShadow["pumpDur"] = data["state"]["reported"]["pumpDur"]
+    WateringSysVars.LightSysShadow["lightSwitch"] = data["state"]["reported"]["lightSwitch"]
     WateringSysVars.LightSysShadow["lightSwitchCmd"] = data["state"]["reported"]["lightSwitchCmd"]
-    WateringSysVars.LightSysShadow["lightinit"] = data["state"]["reported"]["lightinit"] #Need to discuss (one time vs always)
     WateringSysVars.LightSysShadow["clicks"] = data["state"]["reported"]["clicks"]
-    WateringSysVars.LightSysShadow["nextlstate"] = data["state"]["reported"]["nextlstate"]
+    WateringSysVars.LightSysShadow["dimmerValue"] = data["state"]["reported"]["dimmerValue"]
+    WateringSysVars.LightSysShadow["nextState"] = data["state"]["reported"]["nextState"]
     sem_cmd_water.release()
     sem_cmd_light.release()
 
@@ -41,18 +41,18 @@ def GetWaterSysData():
         print("Sensor data received - water: " + sensorData)
         sem_publish_AWS.acquire()
         WateringSysVars.WaterSysShadow["moisture"] = sensorData[0:4]
-        WateringSysVars.WaterSysShadow["waterlvl"] = sensorData[4]
-        WateringSysVars.WaterSysShadow["pumperr"] = sensorData[5]
-        WateringSysVars.WaterSysShadow["pumpcmd"] = "1"
+        WateringSysVars.WaterSysShadow["waterLvl"] = sensorData[4]
+        WateringSysVars.WaterSysShadow["pumpErr"] = sensorData[5]
+        WateringSysVars.WaterSysShadow["waterUnlock"] = "1"
         #publish the current items to AWS
         wps.PublishAWSIoT()
         sem_publish_AWS.release()
         time.sleep(2) #sleep for 1 seconds for subscribe to get latest data
         sem_cmd_water.acquire() #lock the semaphore to process local vars
-        if WateringSysVars.WaterSysShadow["pumpsw"] == "1":
-            sendToESP = "1" + WateringSysVars.WaterSysShadow["pumpdur"] + "0"
-            WateringSysVars.WaterSysShadow["pumpsw"] = "0"
-            WateringSysVars.WaterSysShadow["pumpdur"] = "000"
+        if WateringSysVars.WaterSysShadow["pumpSw"] == "1":
+            sendToESP = "1" + WateringSysVars.WaterSysShadow["pumpDur"] + "0"
+            WateringSysVars.WaterSysShadow["pumpSw"] = "0"
+            WateringSysVars.WaterSysShadow["pumpDur"] = "000"
             sem_cmd_water.release()
             UDPServerSocket_water.sendto(sendToESP, ESPAddress)
             #in case of a command operation publish processed info back to AWS
@@ -80,11 +80,10 @@ def GetLightSysData():
         sem_cmd_light.acquire()
         if WateringSysVars.LightSysShadow["lightSwitchCmd"] == "1" or WateringSysVars.LightSysShadow["lightDimCmd"] == "1":
             if WateringSysVars.LightSysShadow["lightSwitchCmd"] == "1":
-                sendToESP = WateringSysVars.LightSysShadow["lightswitch"]
+                sendToESP = WateringSysVars.LightSysShadow["lightSwitch"]
             else:
                 sendToESP = "x"
             if WateringSysVars.LightSysShadow["lightDimCmd"] == "1":
-                #sendToESP += WateringSysVars.LightSysShadow["nextlstate"]
                 sendToESP += WateringSysVars.LightSysShadow["clicks"]
             else:
                 sendToESP += "x"
