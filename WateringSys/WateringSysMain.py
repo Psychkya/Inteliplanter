@@ -5,7 +5,7 @@ import threading
 import json
 import sys
 import time
-import traceback
+#import traceback
 
 sem_publish_AWS = threading.BoundedSemaphore(1)
 sem_cmd_water = threading.BoundedSemaphore(1)
@@ -46,12 +46,7 @@ def GetWaterSysData():
         WateringSysVars.WaterSysShadow["pumpErr"] = sensorData[5]
         WateringSysVars.WaterSysShadow["waterUnlock"] = "1"
         #publish the current items to AWS
-        try:
-            wps.PublishAWSIoT()
-        except:
-            sem_publish_AWS.release()
-            traceback.print_exc()
-            sys.exit(1)
+        wps.PublishAWSIoT()
         sem_publish_AWS.release()
         time.sleep(2) #sleep for 1 seconds for subscribe to get latest data
         sem_cmd_water.acquire() #lock the semaphore to process local vars
@@ -63,12 +58,7 @@ def GetWaterSysData():
             UDPServerSocket_water.sendto(sendToESP, ESPAddress)
             #in case of a command operation publish processed info back to AWS
             sem_publish_AWS.acquire()
-            try:
-                wps.PublishAWSIoT()
-            except:
-                sem_publish_AWS.release()
-                traceback.print_exc()
-                sys.exit(1)            
+            wps.PublishAWSIoT()
             sem_publish_AWS.release()            
         else:
             sem_cmd_water.release()    
@@ -85,12 +75,7 @@ def GetLightSysData():
         WateringSysVars.LightSysShadow["vis"] = sensorData[0:4]
         WateringSysVars.LightSysShadow["ir"] = sensorData[4:8]
         WateringSysVars.LightSysShadow["uv"] = sensorData[8:12]
-        try:
-            wps.PublishAWSIoT()
-        except:
-            sem_publish_AWS.release()
-            traceback.print_exc()
-            sys.exit(1)
+        wps.PublishAWSIoT()
         sem_publish_AWS.release()
         time.sleep(2)
         sem_cmd_light.acquire()
@@ -108,12 +93,7 @@ def GetLightSysData():
             sem_cmd_light.release()
             UDPServerSocket_water.sendto(sendToESP, ESPAddress)
             sem_publish_AWS.acquire()
-            try:
-                wps.PublishAWSIoT()
-            except:
-                sem_publish_AWS.release()
-                traceback.print_exc()
-                sys.exit(1)
+            wps.PublishAWSIoT()
             sem_publish_AWS.release()            
         else:
             sem_cmd_light.release()    
@@ -133,16 +113,6 @@ thread2.start()
 try:
     while True:
         time.sleep(10000000)
-
-except (KeyboardInterrupt, SystemExit):
-    thread_signal = 0
-    sem_publish_AWS.acquire()
-    sem_cmd_light.acquire()
-    sem_cmd_water.acquire()
-    sem_publish_AWS.release()
-    sem_cmd_light.release()
-    sem_cmd_water.release()
-    sys.exit(0)
 
     
 

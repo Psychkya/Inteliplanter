@@ -52,6 +52,7 @@ def  PublishAWSIoT():
     '", "lightSwitchCmd":"' + WateringSysVars.LightSysShadow["lightSwitchCmd"] + \
     '", "lightSwitch":"' + WateringSysVars.LightSysShadow["lightSwitch"] + \
     '", "clicks":"' + WateringSysVars.LightSysShadow["clicks"] + \
+    '", "nextState":"' + WateringSysVars.LightSysShadow["nextState"] + \
     '", "lightUnlock":"' + WateringSysVars.LightSysShadow["lightUnlock"] + \
     '"} }}'
     print("Payload: ")
