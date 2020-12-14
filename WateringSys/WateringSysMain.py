@@ -75,6 +75,7 @@ def GetLightSysData():
         WateringSysVars.LightSysShadow["vis"] = sensorData[0:4]
         WateringSysVars.LightSysShadow["ir"] = sensorData[4:8]
         WateringSysVars.LightSysShadow["uv"] = sensorData[8:12]
+        WateringSysVars.LightSysShadow["lightUnlock"] = "1"
         wps.PublishAWSIoT()
         sem_publish_AWS.release()
         time.sleep(2)
