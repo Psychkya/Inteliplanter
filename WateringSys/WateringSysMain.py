@@ -110,12 +110,6 @@ thread1.start()
 thread2.setDaemon(True)
 thread2.start()
 
-try:
-    while True:
-        time.sleep(10000000)
 
-    
-
-
-
-
+while True:
+    time.sleep(1000000)
