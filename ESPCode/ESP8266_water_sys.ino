@@ -4,26 +4,34 @@
 #include "keys.h"
 #include "Adafruit_seesaw.h"
 
+/*PINS USED
+D2 - SDA
+D1 - SCL
+D6 - Power sensor
+D8 - Power pump
+D7 - Input for water level sensor 1
+D5 - Input for water level sensor 2
+*/
+
 //Setup global variables
 Adafruit_seesaw ss; //create seesaw object for moisture sensor
 
-WiFiUDP Udp; //setup UDP object
-unsigned int localPort = 4210; //ESP8266 local port
-char sensorData[15]; //buffer to store hold sensor data
-IPAddress remoteIP(192, 168, 1, 178); //Raspberry PI IP address
-unsigned int remotePort = 20001; //Raspberry PI port
-char recvData[255]; //buffer to receive data
+WiFiUDP Udp;
+unsigned int localPort = 4210;
+char sensorData[15];
+IPAddress ip(10, 43, 1, 178);
+unsigned int remotePort = 20001;
+char recvData[255];
+
 
 //Sensor related global variables
-uint16_t waterlvl;
+char waterlvl;
 uint16_t moisture;
 int pumperr = 0;
 
 void setup() {
-  //set baud rate
+  // put your setup code here, to run once:
   Serial.begin(115200);
-
-  //Connect to Wifi
   Serial.print("Connecting to ");
   Serial.println(ssid);
   WiFi.begin(ssid, passwd);
@@ -33,15 +41,18 @@ void setup() {
     Serial.printf(".");  
   }
   Serial.println("Connected");
-  Udp.begin(localPort); //Configure local port  to listen/send over
+
+  Udp.begin(localPort);
 
   //Configure wires for i2c and set GPIO for sensor operations
   Wire.begin(D2,D1);
-  pinMode(D5, OUTPUT); //for water level
-  pinMode(D6, OUTPUT); //for moisture sensor
-  pinMode(D7, OUTPUT); //for pump
-  
-  digitalWrite(D5, HIGH); //GPIO 14 needs to momentarily turned on for seesaw library
+  pinMode(D6, OUTPUT); //Power for all sensors
+  pinMode(D8, OUTPUT); //Power for pump
+  pinMode(D5, INPUT_PULLUP); //input for water level sensor 1
+  pinMode(D7, INPUT_PULLUP); //input for water level sensor 2  
+
+
+  digitalWrite(D6, HIGH); //GPIO 12 needs to momentarily turned on for seesaw library
   if (!ss.begin(0x36)){
     Serial.println("ERROR! seesaw not found");
     while(1);
@@ -49,26 +60,28 @@ void setup() {
     Serial.print("seesaw started! version: ");
     Serial.println(ss.getVersion(),HEX);
   }
-  digitalWrite(D5, LOW); //turn it off to conserver power
-  
+  digitalWrite(D6, LOW); //turn it off to conserver power  
+
 }
 
 //Water level operation
-uint16_t SampleWaterLevel()
+char SampleWaterLevel()
 {
-  uint16_t temp_waterlvl = 0;
-  uint16_t tot_waterlvl = 0;
-  digitalWrite(D6, HIGH); //turn sensor on  
-  for (int i=0; i < 5; i++) //sample 5 times
+  if (digitalRead(D5) == LOW) //Read input 
   {
-    delay(100);
-    temp_waterlvl = analogRead(A0);
-    tot_waterlvl += temp_waterlvl;
-    Serial.print("Water:");
-    Serial.println(temp_waterlvl);
+    if (digitalRead(D7) == LOW)
+    {
+      return 'C';
+    }
+    else
+    {
+      return 'L';
+    }
   }
-  digitalWrite(D6, LOW);  //turn sensor off
-  return uint16_t(tot_waterlvl / 5); //this probably should be mode and perhaps put some delta smartness
+  else
+  {
+    return 'G';
+  }
 }
 
 //Moisture sensor operation
@@ -76,79 +89,65 @@ uint16_t SampleMoistureLevel()
 {
   uint16_t temp_moisture = 0;
   uint16_t tot_moisture = 0;  
-  digitalWrite(D5, HIGH);  //turn sensor on
+  digitalWrite(D6, HIGH);  //turn sensor on
   for (int i=0; i < 5; i++) //sample 5 times
   {
     temp_moisture = ss.touchRead(0);
     tot_moisture += temp_moisture;
-    Serial.print("Moisture:");
-    Serial.println(temp_moisture);
+    //Serial.print("Moisture:");
+    //Serial.println(temp_moisture);
     delay(100);
   }  
-  digitalWrite(D5, LOW); //turn off sensor
+  digitalWrite(D6, LOW); //turn off sensor
   return uint16_t(tot_moisture / 5); //this should probably be mode
 }
 
-void loop() {
 
-  waterlvl = SampleWaterLevel();
-  Serial.print("Final water level: ");
-  Serial.println(waterlvl);  
-  
-  moisture = SampleMoistureLevel();
-  Serial.print("Final moisture level: ");
-  Serial.println(moisture);  
-  
-  //UDP portion
-  sprintf(sensorData, "%04d%04d%d", moisture, waterlvl, pumperr);
-  Serial.print("Sensor data sent: ");
+void loop() {
+  digitalWrite(D8, LOW); //ensure pump power is off at the beginning of next loop
+  moisture=SampleMoistureLevel();
+  waterlvl=SampleWaterLevel();
+  sprintf(sensorData, "%04d%c%d", moisture, waterlvl, pumperr);
+  Serial.print("Sending data: ");
   Serial.println(sensorData);
-  Udp.beginPacket(remoteIP, remotePort);
+  Udp.beginPacket(ip, remotePort);
   Udp.write(sensorData);
   Udp.endPacket();
-
-  //Wait for a max of 1 seconds from response from RPI (in reality perhaps 5 seconds)
-  int len = 0;
   for(int i=0; i < 10; i++)
   {
     int fromRPI = Udp.parsePacket();
     if (fromRPI)
     {
-      Serial.printf("Received %d bytes from %s, port %d\n", fromRPI, Udp.remoteIP().toString().c_str(), Udp.remotePort());
-      len = Udp.read(recvData, 255);
+      //Serial.printf("Received %d bytes from %s, port %d\n", fromRPI, Udp.remoteIP().toString().c_str(), Udp.remotePort());
+      int len =Udp.read(recvData, 255);
       if (len > 0)
       {
-        recvData[len] = 0;
-        Serial.printf("content: %s\n", recvData);
+        if (recvData[0] == '1')
+        {
+          int waterLvlNow = SampleWaterLevel();
+          if (waterLvlNow != 'C')
+          {
+            Serial.print("Turning on pump ");
+            int dur = ((recvData[1] - '0')*100 + (recvData[2] - '0')*10 + (recvData[3] - '0')) * 1000;
+            Serial.println(dur);
+            digitalWrite(D8, HIGH);
+            delay(dur);
+            digitalWrite(D8, LOW);
+            pumperr = 0;
+          }
+          else {
+            pumperr = 1;
+          }
+        }
+        else {
+          Serial.println("Received packet, but pump switch is off...");
+          pumperr = 1;
+        }
         break;
       }
     }
-    delay(100);
+    delay(400);
   }
-  if (len > 0)
-  {
-    if (recvData[0] == '1')
-    {
-      int waterLvlNow = SampleWaterLevel();
-      if (waterLvlNow > 200)
-      {
-        Serial.println("Turning on pump");
-        int dur = ((recvData[1] - '0')*100 + (recvData[2] - '0')*10 + (recvData[3] - '0')) * 1000;
-        Serial.print("Turning on pump on for ");
-        Serial.println(dur);
-        digitalWrite(D7, HIGH);
-        delay(dur);
-        digitalWrite(D7, LOW);
-      }
-      else {
-        Serial.println("Water level too low!");
-      }
-    }
-    else {
-      Serial.println("Received packet, but pump switch is off...");
-    }
-  }
-  
-  delay(5000);
-  
+  delay(20000); 
+
 }
