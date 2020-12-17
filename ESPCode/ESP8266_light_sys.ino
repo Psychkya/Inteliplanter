@@ -89,6 +89,7 @@ void loop() {
           Serial.println("Light switched toggled!");
           delay(200);
           digitalWrite(D6, LOW);
+          delay(100);
         }
         if (recvData[1] != 'x')
         {
