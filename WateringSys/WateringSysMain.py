@@ -28,6 +28,7 @@ def ServiceCommands(client, userdata, message):
     WateringSysVars.WaterSysShadow["pumpDur"] = data["state"]["reported"]["pumpDur"]
     WateringSysVars.LightSysShadow["lightSwitch"] = data["state"]["reported"]["lightSwitch"]
     WateringSysVars.LightSysShadow["lightSwitchCmd"] = data["state"]["reported"]["lightSwitchCmd"]
+    WateringSysVars.LightSysShadow["lightDimCmd"] = data["state"]["reported"]["lightDimCmd"]
     WateringSysVars.LightSysShadow["clicks"] = data["state"]["reported"]["clicks"]
     WateringSysVars.LightSysShadow["dimmerValue"] = data["state"]["reported"]["dimmerValue"]
     WateringSysVars.LightSysShadow["nextState"] = data["state"]["reported"]["nextState"]
@@ -88,7 +89,7 @@ def GetLightSysData():
             if WateringSysVars.LightSysShadow["lightDimCmd"] == "1":
                 sendToESP += WateringSysVars.LightSysShadow["clicks"]
             else:
-                sendToESP += "x"
+                sendToESP += "xx"
             WateringSysVars.LightSysShadow["lightSwitchCmd"] = "0"
             WateringSysVars.WaterSysShadow["lightDimCmd"] = "0"
             sem_cmd_light.release()
