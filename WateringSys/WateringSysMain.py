@@ -5,6 +5,7 @@ import threading
 import json
 import sys
 import time
+#import traceback
 
 sem_publish_AWS = threading.BoundedSemaphore(1)
 sem_cmd_water = threading.BoundedSemaphore(1)
@@ -27,6 +28,7 @@ def ServiceCommands(client, userdata, message):
     WateringSysVars.WaterSysShadow["pumpDur"] = data["state"]["reported"]["pumpDur"]
     WateringSysVars.LightSysShadow["lightSwitch"] = data["state"]["reported"]["lightSwitch"]
     WateringSysVars.LightSysShadow["lightSwitchCmd"] = data["state"]["reported"]["lightSwitchCmd"]
+    WateringSysVars.LightSysShadow["lightDimCmd"] = data["state"]["reported"]["lightDimCmd"]
     WateringSysVars.LightSysShadow["clicks"] = data["state"]["reported"]["clicks"]
     WateringSysVars.LightSysShadow["dimmerValue"] = data["state"]["reported"]["dimmerValue"]
     WateringSysVars.LightSysShadow["nextState"] = data["state"]["reported"]["nextState"]
@@ -74,7 +76,8 @@ def GetLightSysData():
         WateringSysVars.LightSysShadow["vis"] = sensorData[0:4]
         WateringSysVars.LightSysShadow["ir"] = sensorData[4:8]
         WateringSysVars.LightSysShadow["uv"] = sensorData[8:12]
-        wps.PublishAWSIoT()        
+        WateringSysVars.LightSysShadow["lightUnlock"] = "1"
+        wps.PublishAWSIoT()
         sem_publish_AWS.release()
         time.sleep(2)
         sem_cmd_light.acquire()
@@ -86,7 +89,7 @@ def GetLightSysData():
             if WateringSysVars.LightSysShadow["lightDimCmd"] == "1":
                 sendToESP += WateringSysVars.LightSysShadow["clicks"]
             else:
-                sendToESP += "x"
+                sendToESP += "xx"
             WateringSysVars.LightSysShadow["lightSwitchCmd"] = "0"
             WateringSysVars.WaterSysShadow["lightDimCmd"] = "0"
             sem_cmd_light.release()
@@ -109,22 +112,6 @@ thread1.start()
 thread2.setDaemon(True)
 thread2.start()
 
-try:
-    while True:
-        time.sleep(10000000)
 
-except (KeyboardInterrupt, SystemExit):
-    thread_signal = 0
-    sem_publish_AWS.acquire()
-    sem_cmd_light.acquire()
-    sem_cmd_water.acquire()
-    sem_publish_AWS.release()
-    sem_cmd_light.release()
-    sem_cmd_water.release()
-    sys.exit(0)
-
-    
-
-
-
-
+while True:
+    time.sleep(1000000)

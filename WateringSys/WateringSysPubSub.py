@@ -39,19 +39,21 @@ def SubscribeAWSIoT(var):
 def  PublishAWSIoT():
     JSONPayload = '{"state": {"reported": {"id":"' + WateringSysVars.plantShadow["id"] + \
     '", "moisture":"' + WateringSysVars.WaterSysShadow["moisture"] + \
-    '", "waterlvl":"' + WateringSysVars.WaterSysShadow["waterlvl"] + \
-    '", "pumpsw":"' + WateringSysVars.WaterSysShadow["pumpsw"] + \
-    '", "pumpdur":"' + WateringSysVars.WaterSysShadow["pumpdur"] + \
-    '", "pumpcmd":"' + WateringSysVars.WaterSysShadow["pumpcmd"] + \
-    '", "pumperr":"' + WateringSysVars.WaterSysShadow["pumperr"] + \
+    '", "waterLvl":"' + WateringSysVars.WaterSysShadow["waterLvl"] + \
+    '", "pumpSw":"' + WateringSysVars.WaterSysShadow["pumpSw"] + \
+    '", "pumpDur":"' + WateringSysVars.WaterSysShadow["pumpDur"] + \
+    '", "waterUnlock":"' + WateringSysVars.WaterSysShadow["waterUnlock"] + \
+    '", "pumpErr":"' + WateringSysVars.WaterSysShadow["pumpErr"] + \
     '", "vis":"' + WateringSysVars.LightSysShadow["vis"] + \
     '", "ir":"' + WateringSysVars.LightSysShadow["ir"] + \
     '", "uv":"' + WateringSysVars.LightSysShadow["uv"] + \
     '", "lightDimCmd":"' + WateringSysVars.LightSysShadow["lightDimCmd"] + \
-    '", "dimmerCurrent":"' + WateringSysVars.LightSysShadow["dimmerCurrent"] + \
-    '", "dimmerPrev":"' + WateringSysVars.LightSysShadow["dimmerPrev"] + \
+    '", "dimmerValue":"' + WateringSysVars.LightSysShadow["dimmerValue"] + \
     '", "lightSwitchCmd":"' + WateringSysVars.LightSysShadow["lightSwitchCmd"] + \
-    '", "lightswitch":"' + WateringSysVars.LightSysShadow["lightswitch"] + \
+    '", "lightSwitch":"' + WateringSysVars.LightSysShadow["lightSwitch"] + \
+    '", "clicks":"' + WateringSysVars.LightSysShadow["clicks"] + \
+    '", "nextState":"' + WateringSysVars.LightSysShadow["nextState"] + \
+    '", "lightUnlock":"' + WateringSysVars.LightSysShadow["lightUnlock"] + \
     '"} }}'
     print("Payload: ")
     print(JSONPayload)
