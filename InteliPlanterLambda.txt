@@ -5,6 +5,17 @@ import boto3
 import datetime
 
 print('Loading function')
+
+#find clicks required to get to dimmer state value
+def cntClicks(previous,new,nextstate):
+    print("counting clicks")
+    click = 0
+    while(previous != new):
+        previous = previous+nextstate
+        click +=1
+        if (previous == 1) or (previous == 9):
+            nextstate = nextstate*-1
+    return (click,nextstate)
  
 def lambda_handler(event, context):
  
@@ -12,11 +23,9 @@ def lambda_handler(event, context):
     #print (current_time)  
  
     # Parse the JSON message
-    #print(event)
     sensor = event['current']['state']['reported']
-    #sensor = json.loads(event['current']['state']['reported'])
+    #sensor = event['state']['reported']
     #print(sensor)
-    #Id = 'ip11111' 
     Id = sensor['id']
     
     #Update data in the dynamoDB data base 
@@ -31,7 +40,6 @@ def lambda_handler(event, context):
         }
     )
     planter = response1['Item']
-    #print(planter)
     
     # Get plant type from table
     plant = planter['plantType']
@@ -41,144 +49,149 @@ def lambda_handler(event, context):
         }
     )
     plantType = response2['Item']
-    #print(plantType)
 
-###### Light Logic ######
-#    lightControl = 0; #Light off
+### Shadow Variables ###
+    waterUnlock = int(sensor['waterUnlock'])
+    waterTimer = planter['waterTimerDays']
+    moisture_str = sensor['moisture']
+    errorMessage = "Happy Growing =)"
+    moisture = int(sensor['moisture'])
+    pumpSw = sensor['pumpSw']
+    pumpDur = sensor['pumpDur']
+    lightUnlock = int(sensor['lightUnlock'])
+    lightCnt = planter['lightCnt']
+    lightSwitch = int(sensor['lightSwitch'])
+    lightSwitchCmd = int(sensor['lightSwitchCmd'])
+    lightDimCmd = int(sensor['lightDimCmd'])
+    dimmerValue = int(sensor['dimmerValue'])
+    dimmerCurrent = 0
+    nextState = int(sensor['nextState'])
+    clicks = int(sensor['clicks'])
+    lightExposure = ''
+    uv_value = int(sensor['uv'])
+    vis_value = int(sensor['vis'])/.282
+    ir_value = int(sensor['ir'])
+    demoDays = planter['demoDays']
     
-#    lightCnt = planter['lightCnt']
-
-    # Check if sensors are recording values that constitute and hour of sun 
-#    if((int(sensor['Vislight']) >= 1) & (int(sensor['IRlight']) >= 1) & (int(sensor['UV']) >= 1)):
-#        response4 = planterTable.update_item(
-#            Key={
-#                'PlanterId': Id
-#            },
-#            UpdateExpression="set lightCnt=:r",
-#            ExpressionAttributeValues={
-#                ':r': lightCnt + 1,
-#            }
-#        )
-
-    # Check if light requirement is fulfilled 
-#    if((plantType['lightExposure'] == 'full') & (lightCnt >= 8) |
-#    (plantType['lightExposure'] == 'partial') & (lightCnt >= 6) |
-#    (plantType['lightExposure'] == 'shade') & (lightCnt >= 4)):
-#        lightControl = 0; #Turn off light 
-#    else:
-#        lightControl = 1;
+###### Light Logic ######   
+    
+    print(int(vis_value))
+    if (lightUnlock == 1):
+        # Only for demo purposes 
+        if(demoDays == 12):
+            demoDays = 0
+            lightCnt = 0
+        else:
+            demoDays = demoDays + 1
         
-#state values for light are represented by :Vislight, IRlight, UV
-  
-#    sensor = event['state']['reported']
-   
-#    uv_value = int(sensor['uv'])
-#    vis_value = int(sensor['vis'])
-#    ir_value = int(sensor['ir'])
- 
-  ###find clicks required to get to dimmer state value
-#    def clicks(previous,new,nextstate):
-#        click = 0
-#        while(previous != new):
-#            previous = previous+nextstate
-#            click +=1
-#            if (previous == 1) or (previous == 9):
-#                nextstate = nextstate*-1
-#    return (click,nextstate)
-   
-  ###light logic ###
-  #check for light initialization
-    # if (lightinit not in sensor):
-    #     sensor['lightinit'] = 0; #initialize lightinit value as zero
-    #     sensor['dimmerPrev']= 0;
-    #     sensor['nextlstate'] = 0;
+        ### Check if light is adequate ###  
+        if (vis_value < 907): #256
+            lightExposure = 'none'
+            dimmerCurrent = 9
+            
+        elif(907 < vis_value < 957): #265
+            lightExposure = 'low'
+            dimmerCurrent = 7
+            
+        elif(957 < vis_value < 1064): #300
+            lightExposure = 'medium'
+            dimmerCurrent = 5
+            
+        elif(1064 < vis_value < 1300): 
+            lightExposure = 'high'
+            dimmerCurrent = dimmerCurrent
+        else:
+            lightExposure = 'sun'
+
+        ### Turn light on if not high, otherwise make sure light is off ###
+        if(((plantType['lightExposure'] == 'full') & (lightCnt < 8)) |
+        ((plantType['lightExposure'] == 'partial') & (lightCnt < 6)) |
+        ((plantType['lightExposure'] == 'shade') & (lightCnt < 4))):
+            if(lightExposure != 'sun'):
+                if(lightSwitch == 0):
+                    lightSwitchCmd = 1
+                    lightSwitch = 1
+                
+                #if((lightExposure != 'high') & ((dimmerCurrent < dimmerValue) | (dimmerCurrent == dimmerValue))):
+                #    dimmerCurrent = dimmerValue + 1
+                    
+                a = cntClicks(dimmerValue,dimmerCurrent,nextState)
+                clicks = a[0]
+                if(clicks != 0):
+                    lightDimCmd = 1
+                    dimmerValue = dimmerCurrent
+                    nextState = a[1]
+                else: 
+                    lightDimCmd = 0
+                
+            elif(lightExposure=='sun'):
+                lightCnt = lightCnt + 1; 
+                if(lightSwitch == 1 ):
+                    lightSwitchCmd = 1
+                    lightSwitch = 0
+        else:
+            if(lightSwitch == 1):
+                lightSwitchCmd = 1
+                lightSwitch = 0
+                
+        lightUnlock = 0
+        
+        myclient = boto3.client('iot-data')
+        data = {"state" : { "reported" : { "pumpSw" : str(pumpSw), "pumpDur" : str(pumpDur).zfill(3), "waterUnlock" : str(waterUnlock),  
+                "dimmerValue" : str(dimmerValue), "nextState" : str (nextState), "lightSwitch" : str(lightSwitch), 
+                "lightSwitchCmd" : str(lightSwitchCmd), "clicks" : str(clicks).zfill(2), "lightDimCmd" : str(lightDimCmd), "lightUnlock" : str(lightUnlock) }}}
+        eventText = json.dumps(data)
     
-    # if sensor['lightinit'] == 1:
-    #     lightstate = int(sensor['dimmerPrev'])
-    #     nextstate = int(sensor['nextlstate'])
-     
-    # elif sensor['lightinit'] == 0:
-    #     lightstate = 9;
-    #     sensor['dimmerPrev'] = lightstate
-    #     sensor['lightinit'] = 1
-    #     sensor['nextlstate'] = -1
-       
- 
-  ### algorithim to check if light is adequate or not by doing some multiplication and addition with uv, ir, and vis light values
- 
-#    if (vis_value < 270):
-#        lightexposure = 'none'
-#        dimmerCurrent = 9
-#    elif(270 < vis_value < 807):
-#        lightexposure = 'low'
-#        dimmerCurrent = 7
-#    elif(807 < vis_value < 1614):
-#        lightexposure = 'medium'
-#        dimmerCurrent = 3
-#    elif(1614 < vis_value):
-#        lightexposure = 'high'
-#        dimmerCurrent = 0
-  ###output variable with be lightexposure which will be high, medium, low, none
- 
-  ###
-#    if(lightexposure != 'high'):
-        #turn light on to maximum level
-#        if(sensor['lightswitch'] == 0):
-#            sensor['lightSwitchCmd'] =1
-#            sensor['lightswitch'] = 1
-#        dimmerPrev = sensor['dimmerPrev']
-#        nextstate = sensor['nextlstate']
-#        a = clicks(dimmerPrev,dimmerCurrent,nextstate)
-#        sensor['lightDimCmd'] = 1
-#        sensor['dimmerCurrent'] = dimmerCurrent
-#        sensor['dimmerPrev'] = sensor['dimmerCurrent']
-#        sensor['clicks'] = a(0)
-#        sensor['nextlstate'] = a(1)
-#    elif(lightexposure=='high'):
-#        if(sensor['lightswitch'] == 1 ):
-#            sensor['lightSwitchCmd'] = 1
-#            sensor['lightswitch'] = 0
-  
+        #Publish a message to the specified topic
+        response = myclient.publish (
+            topic = '$aws/things/PlantSoilWater/shadow/update',
+            qos = 0,
+            payload = eventText.encode()
+        ) 
+        
+        response3 = planterTable.update_item(
+            Key={
+                'PlanterId': Id
+            },
+            UpdateExpression="set light=:l, lightCnt=:c, demoDays =:d",
+            ExpressionAttributeValues={
+                ':c': lightCnt,
+                ':l': int(vis_value),
+                ':d': demoDays
+            },
+        )
    
 ###### Moisture Logic ######
-    moisture = int(sensor['moisture'])
-    #print(moisture)
-    moisture_str = sensor['moisture']
-    pumpcmd = int(sensor['pumpcmd'])
-    waterTimer = planter['waterTimerDays']
-    pumpsw = 0
-    pumpdur = 0
-    errorMessage = "Happy Growing =)"
-    print("This is pumpcmd: %d" % (pumpcmd))
-    if (pumpcmd == 1): #check for water update
-        print("running water")
+    
+    if (waterUnlock == 1): #check for water update
+
         if (waterTimer > 0): #assumes we only check water once a day, needs to be fixed
             waterTimer = waterTimer - 1
             print("counting down days")
         elif (moisture < 400) and (waterTimer == -1):
-            print("setting water wait")
             if (plantType['waterLevel'] == 'dry'):
                 waterTimer = 30
             elif (plantType['waterLevel'] == 'average'):
                 waterTimer = 2
             elif (plantType['waterLevel'] == 'moist'):
                 waterTimer = 0
-        elif (waterTimer == 0) and (sensor['waterlvl'] != 'C'):
-            print("turning on pump")
-            pumpsw = 1
-            pumpdur = 10 #THIS HAS TO COME FROM DYNAMODB
+        elif (waterTimer == 0) and (sensor['waterLvl'] != 'C'):
+            pumpSw = 1
+            pumpDur = 10 #THIS HAS TO COME FROM DYNAMODB
             waterTimer = waterTimer - 1
     
-        if (sensor['waterlvl'] == 'C'):
+        if (sensor['waterLvl'] == 'C'):
             errorMessage = "URGENT: Water level is critally low, please refill the water tank"
-        elif (sensor['waterlvl'] == 'L'):
+        elif (sensor['waterLvl'] == 'L'):
             errorMessage = "Water level is low, please refill the water tank"
             
-        pumpcmd = 0 #This is to prevent lambda from triggering over and over again
+        waterUnlock = 0 #This is to prevent lambda from triggering over and over again
   
 ##### Update shadow with new values #####  
         myclient = boto3.client('iot-data')
-        data = {"state" : { "reported" : { "pumpsw" : str(pumpsw), "pumpdur" : str(pumpdur).zfill(3), "pumpcmd" : str(pumpcmd) }}}
+        data = {"state" : { "reported" : { "pumpSw" : str(pumpSw), "pumpDur" : str(pumpDur).zfill(3), "waterUnlock" : str(waterUnlock),  
+                "dimmerValue" : str(dimmerValue), "nextState" : str (nextState), "lightSwitch" : str(lightSwitch), 
+                "lightSwitchCmd" : str(lightSwitchCmd), "clicks" : str(clicks).zfill(2), "lightDimCmd" : str(lightDimCmd), "lightUnlock" : str(lightUnlock) }}}
         eventText = json.dumps(data)
         
         #Publish a message to the specified topic
@@ -191,17 +204,14 @@ def lambda_handler(event, context):
    
 ##### Update dynamoDB with new values #####
 
-    response3 = planterTable.update_item(
-        Key={
-            'PlanterId': Id
-        },
-        UpdateExpression="set moisture=:r, waterTimerDays=:w, errorMessage=:e",
-        ExpressionAttributeValues={
-            ':r': moisture_str,
-            ':w': waterTimer,
-            ':e': errorMessage
-        },
-        ReturnValues="UPDATED_NEW"
-    )  
-
-    print(response)
+        response3 = planterTable.update_item(
+            Key={
+                'PlanterId': Id
+            },
+            UpdateExpression="set moisture=:m, waterTimerDays=:w, errorMessage=:e",
+            ExpressionAttributeValues={
+                ':m': moisture_str,
+                ':w': waterTimer,
+                ':e': errorMessage
+            },
+        )  
