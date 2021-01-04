@@ -35,7 +35,7 @@
         android:layout_width="300dp"
         android:layout_height="100dp"
         android:layout_marginBottom="350dp"
-        android:background="#4F5254"
+        android:background="#B092E6"
         android:text="TextView"
         android:textAlignment="center"
         android:textColor="@color/black"
@@ -68,5 +68,17 @@
         android:textSize="20sp"
         app:layout_constraintBottom_toBottomOf="parent"
         app:layout_constraintStart_toStartOf="parent" />
+
+    <ImageView
+        android:id="@+id/imageView"
+        android:layout_width="144dp"
+        android:layout_height="194dp"
+        android:layout_marginStart="124dp"
+        android:layout_marginEnd="125dp"
+        android:layout_marginBottom="24dp"
+        app:layout_constraintBottom_toBottomOf="parent"
+        app:layout_constraintEnd_toEndOf="parent"
+        app:layout_constraintStart_toStartOf="parent"
+        app:srcCompat="@drawable/better_plant" />
 
 </androidx.constraintlayout.widget.ConstraintLayout>

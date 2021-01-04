@@ -34,7 +34,7 @@ public class PlanterDashboard extends AppCompatActivity {
         if(planterInfo.get("creationDate") == null){
             plantAge.setText("No date found");
         } else {
-            SimpleDateFormat sdf = new SimpleDateFormat("dd/MM/yyyy");
+            SimpleDateFormat sdf = new SimpleDateFormat("MM/dd/yyyy");
             String date = sdf.format(new Date(planterInfo.get("creationDate").asLong()));
             plantAge.setText("Growing Since: " + date);
         }

@@ -38,13 +38,14 @@ public class CreateNewPlanter extends AppCompatActivity {
        CreateItemAsyncTask task = new CreateItemAsyncTask();
        task.execute(newPlanter);
 
-        Intent intent=new Intent(this, PlanterDashboard.class);
+       Intent intent=new Intent(this, PlanterDashboard.class);
+       intent.putExtra("planterID", planterId);
 
-        intent.putExtra("plant", "Plant Type: " + type);
+        /*intent.putExtra("plant", "Plant Type: " + type);
         intent.putExtra("age", "Growing Since: 10/27/2020");
         intent.putExtra("error", "Happy Growing!");
         intent.putExtra("moisture", "Moisture Level: ---");
-        intent.putExtra("light", "Light Exposure: ---");
+        intent.putExtra("light", "Light Exposure: ---");*/
         startActivity(intent);
     }
 
